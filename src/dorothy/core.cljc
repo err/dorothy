@@ -199,7 +199,31 @@
 (defn ^:private error
   [fmt & args]
   (throw (#?(:clj RuntimeException. :cljs js/Error.)
-           ^String (apply #?(:clj format :cljs gstring/format) fmt args))))
+          ^String (apply #?(:clj format :cljs gstring/format) fmt args))))
+
+;; Copied from Clojure 1.9.0-alpha17
+(defn ^:private -simple-keyword?
+  "Return true if x is a keyword without a namespace"
+  [x]
+  (and (keyword? x) (nil? (namespace x))))
+
+;; Copied from Clojure 1.9.0-alpha17
+(defn ^:private -qualified-keyword?
+  "Return true if x is a keyword with a namespace"
+  [x]
+  (boolean (and (keyword? x) (namespace x) true)))
+
+(defn ^:private qualified-name
+  "Like `clojure.core/name`, but preserves namespace when k is a qualified keyword.
+   Unlike `clojure.core/name`, does not throw NPE when input is `nil`."
+  [k]
+  (cond
+    (nil? k)                nil
+    (string? k)             k
+    (-simple-keyword?    k) (name k)
+    (-qualified-keyword? k) (str (namespace k) "/" (name k))))
+
+
 
 ;; ----------------------------------------------------------------------
 ;; # Id Generation
@@ -400,7 +424,7 @@
 (defn ^:private to-ast [v]
   (cond
     (is-ast? v)  v
-    (keyword? v) (parse-node-id (name v))
+    (keyword? v) (parse-node-id (qualified-name v))
     (string?  v) (parse-node-id v)
     (number?  v) (parse-node-id (str v))
     (gen-id?  v) (node-id v)

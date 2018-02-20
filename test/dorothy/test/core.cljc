@@ -2,6 +2,22 @@
   (:require [dorothy.core :as d]
             [clojure.test :refer [deftest testing is are]]))
 
+(deftest test-qualified-name
+  ;; workaround to access private var
+  (let [qualified-name #'d/qualified-name]
+    (testing "Serves as a no-op"
+      (testing "for `nil` input"
+        (is (nil? (qualified-name nil))))
+      (testing "for string input"
+        (doseq [input [ "" "foo" "foo/bar"]]
+          (is (= input (qualified-name input))))))
+    (testing "Intended usage"
+      (testing "simple keyword input: result equivalent to that of `clojure.core/name`"
+        (is (= "foo" (qualified-name :foo) (name :foo))))
+      (testing "qualified keyword: namespace is preserved"
+        (is (= "foo/bar" (qualified-name :foo/bar)))
+        (is (= "dorothy.core/bar" (qualified-name ::d/bar)))))))
+
 (deftest test-is-ast?
   (testing "Returns true for any map with :type"
     (is (d/is-ast? {:type :foo}))
